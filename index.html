@@ -13,21 +13,41 @@
         body { font-family: 'Cairo', sans-serif; background: var(--bg); margin: 0; padding: 0; }
         .header { background: linear-gradient(180deg, #2a75bb, #1a5298); color: white; text-align: center; padding: 35px 10px; border-radius: 0 0 40px 40px; margin-bottom: 25px; }
         .container { max-width: 500px; margin: 0 auto 20px; padding: 0 15px; }
+        
         .admin-card { background: white; border-radius: 20px; padding: 20px; display: none; border: 2px solid var(--primary); margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-family: 'Cairo'; }
+        
+        .camera-section { display: flex; gap: 10px; margin: 10px 0; }
+        .cam-btn { flex: 1; background: #f8f9fa; border: 2px dashed var(--primary); padding: 15px; border-radius: 12px; cursor: pointer; text-align: center; color: var(--primary); font-weight: bold; }
+        
         .btn-post { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; }
+        
         .hw-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); position: relative; border: 1px solid #eee; }
-        .post-time { font-size: 11px; color: #888; background: #f8f9fa; padding: 4px 10px; border-radius: 8px; margin-bottom: 12px; display: inline-block; }
         .badge-page { position: absolute; left: 15px; top: 15px; background: #e74c3c; color: white; padding: 6px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; z-index: 5; }
-        .hw-img { width: 100%; border-radius: 15px; margin-top: 15px; border: 1px solid #eee; }
+        
+        /* تنسيق الوقت والتاريخ */
+        .post-date { font-size: 11px; color: #777; background: #f0f2f5; padding: 3px 10px; border-radius: 5px; display: inline-block; margin-bottom: 10px; }
+
+        .card-header { border-bottom: 2px solid #f8f9fa; padding-bottom: 12px; margin-bottom: 15px; }
+        .school-info { color: var(--primary); font-weight: 900; font-size: 18px; display: block; }
+        .teacher-info { background: #f0f4f8; color: #333; padding: 5px 12px; border-radius: 8px; font-size: 14px; display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; border: 1px dashed #1a5298; }
+        
+        .notes-text { font-size: 15px; line-height: 1.6; color: #444; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; margin-bottom: 5px; }
+        .notes-text.expanded { -webkit-line-clamp: unset; display: block; }
+        .read-more-btn { color: var(--primary); border: none; background: none; font-weight: bold; cursor: pointer; padding: 0 0 10px 0; font-family: 'Cairo'; }
+
+        .hw-img { width: 100%; border-radius: 15px; margin-top: 10px; border: 1px solid #eee; }
+        
         .share-bar { display: flex; gap: 8px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
         .share-btn { flex: 1; border: none; padding: 10px; border-radius: 10px; color: white; display: flex; align-items: center; justify-content: center; gap: 5px; text-decoration: none; font-size: 13px; font-weight: bold; cursor: pointer; }
         .btn-wa { background-color: var(--whatsapp); }
         .btn-tg { background-color: var(--telegram); }
+
         .admin-controls { display: none; gap: 8px; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 15px; }
-        .control-btn { flex: 1; border: none; padding: 10px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-family: 'Cairo'; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .control-btn { flex: 1; border: none; padding: 10px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn-edit { background-color: var(--edit); }
         .btn-del { background-color: var(--del); }
+        
         .settings-btn { position: fixed; bottom: 25px; left: 25px; background: #fff; width: 55px; height: 55px; border-radius: 50%; cursor: pointer; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 24px; }
     </style>
 </head>
@@ -35,7 +55,7 @@
 
 <div class="header">
     <h1 id="mainTitle">منصة الواجبات المدرسية</h1>
-    <p id="mainSub">نظام متابعة الدروس الذكي</p>
+    <p>نظام متابعة الدروس الذكي</p>
 </div>
 
 <div class="container">
@@ -53,8 +73,20 @@
             <input type="text" id="inSubj" placeholder="المادة">
             <input type="number" id="inPage" placeholder="الصفحة">
         </div>
-        <textarea id="inNotes" style="height:100px;" placeholder="تفاصيل الواجب..."></textarea>
-        <input type="file" id="inImg" accept="image/*">
+        <textarea id="inNotes" style="height:120px;" placeholder="تفاصيل الواجب..."></textarea>
+        
+        <div class="camera-section">
+            <label class="cam-btn">
+                <i class="fas fa-camera"></i> تصوير مباشر
+                <input type="file" id="takePic" accept="image/*" capture="environment" style="display:none" onchange="previewImg(this)">
+            </label>
+            <label class="cam-btn">
+                <i class="fas fa-images"></i> من المعرض
+                <input type="file" id="pickPic" accept="image/*" style="display:none" onchange="previewImg(this)">
+            </label>
+        </div>
+        <div id="imgStatus" style="text-align:center; font-size:12px; color:green; margin-bottom:10px; display:none;">✅ تم اختيار الصورة</div>
+
         <button class="btn-post" id="mainBtn" onclick="processUpload()">🚀 نشر الواجب</button>
         <button class="btn-post" id="cancelBtn" style="display:none; background:#7f8c8d; margin-top:10px;" onclick="location.reload()">إلغاء</button>
     </div>
@@ -74,6 +106,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    let selectedImg = "";
     let isLogged = false;
 
     function openAdmin() { 
@@ -84,30 +117,20 @@
         }
     }
 
-    // دالة المشاركة التي تسحب الرابط تلقائياً وتصلح الخطأ
-    function shareMe(type, subj, school, page) {
-        // سحب رابط الصفحة الحالي بدقة
-        const currentUrl = window.location.href;
-        const msg = `📌 واجب جديد\n🏫 مدرسة: ${school}\n📚 المادة: ${subj}\n📖 صفحة: ${page}\n🔗 الرابط: ${currentUrl}`;
-        
-        const link = type === 'wa' 
-            ? `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`
-            : `https://t.me/share/url?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(msg)}`;
-        
-        window.open(link, '_blank');
+    function previewImg(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => { selectedImg = e.target.result; document.getElementById('imgStatus').style.display = 'block'; };
+            reader.readAsDataURL(input.files[0]);
+        }
     }
 
     async function processUpload() {
-        const file = document.getElementById('inImg').files[0];
         const key = document.getElementById('editKey').value;
-        if(file) {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => save(reader.result, key);
-        } else { save("", key); }
-    }
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ar-EG');
+        const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
-    async function save(img, key) {
         const data = {
             school: document.getElementById('inSchool').value,
             loc: document.getElementById('inLoc').value,
@@ -117,8 +140,9 @@
             subj: document.getElementById('inSubj').value,
             page: document.getElementById('inPage').value,
             notes: document.getElementById('inNotes').value,
-            img: img || "",
-            fullDate: new Date().toLocaleString('ar-EG', { hour12: true }),
+            img: selectedImg,
+            date: dateStr,
+            time: timeStr,
             ts: Date.now()
         };
         if(key) await db.ref('homework/'+key).update(data);
@@ -130,40 +154,45 @@
         document.getElementById('editKey').value = key;
         document.getElementById('inSchool').value = d.school;
         document.getElementById('inLoc').value = d.loc;
-        document.getElementById('inType').value = d.type;
-        document.getElementById('inSection').value = d.section;
         document.getElementById('inTeacher').value = d.teacher;
         document.getElementById('inSubj').value = d.subj;
         document.getElementById('inPage').value = d.page;
         document.getElementById('inNotes').value = d.notes;
-        document.getElementById('panelTitle').innerText = "📝 تعديل";
-        document.getElementById('mainBtn').innerText = "تحديث";
+        selectedImg = d.img || "";
+        document.getElementById('panelTitle').innerText = "📝 تعديل الواجب";
+        document.getElementById('mainBtn').innerText = "تحديث الآن";
         document.getElementById('cancelBtn').style.display = 'block';
         window.scrollTo(0,0);
+    }
+
+    function toggleText(btn) {
+        const p = btn.previousElementSibling;
+        p.classList.toggle('expanded');
+        btn.innerText = p.classList.contains('expanded') ? "عرض أقل" : "اقرأ المزيد...";
     }
 
     db.ref('homework').orderByChild('ts').on('value', snap => {
         const container = document.getElementById('tasksContainer');
         container.innerHTML = "";
         snap.forEach(child => {
-            const v = child.val();
-            const k = child.key;
-            document.getElementById('mainTitle').innerText = "منصة " + v.school;
+            const v = child.val(); const k = child.key;
+            const hasMore = v.notes.length > 120;
             container.insertAdjacentHTML('afterbegin', `
                 <div class="hw-card">
                     <div class="badge-page">ص ${v.page}</div>
-                    <div class="post-time">🕒 ${v.fullDate || ''}</div>
+                    <div class="post-date"><i class="far fa-calendar-alt"></i> ${v.date || ''} | <i class="far fa-clock"></i> ${v.time || ''}</div>
                     <div class="card-header">
                         <span class="school-info">🏫 مدرسة ${v.school}</span>
-                        <span style="font-size:12px; color:#666;">📍 ${v.loc} | شعبة ${v.section}</span>
+                        <div class="teacher-info"><i class="fas fa-user-tie"></i> المدرس: <b>${v.teacher}</b></div>
                     </div>
                     <h2 style="color:var(--primary); font-size:18px;">📚 واجب ${v.subj}</h2>
-                    <p>${v.notes}</p>
+                    <p class="notes-text">${v.notes.replace(/\n/g, '<br>')}</p>
+                    ${hasMore ? `<button class="read-more-btn" onclick="toggleText(this)">اقرأ المزيد...</button>` : ''}
                     ${v.img ? `<img src="${v.img}" class="hw-img">` : ""}
                     
                     <div class="share-bar">
-                        <button onclick="shareMe('wa', '${v.subj}', '${v.school}', '${v.page}')" class="share-btn btn-wa"><i class="fab fa-whatsapp"></i> واتساب</button>
-                        <button onclick="shareMe('tg', '${v.subj}', '${v.school}', '${v.page}')" class="share-btn btn-tg"><i class="fab fa-telegram"></i> تليجرام</button>
+                        <button onclick="window.open('https://wa.me/?text='+encodeURIComponent('واجب ${v.subj}\\nمدرسة ${v.school}\\nص: ${v.page}\\nنُشر في: ${v.date}'), '_blank')" class="share-btn btn-wa"><i class="fab fa-whatsapp"></i> واتساب</button>
+                        <button onclick="window.open('https://t.me/share/url?url='+encodeURIComponent(window.location.href)+'&text='+encodeURIComponent('واجب ${v.subj}'), '_blank')" class="share-btn btn-tg"><i class="fab fa-telegram"></i> تليجرام</button>
                     </div>
 
                     <div class="admin-controls" style="display: ${isLogged ? 'flex' : 'none'}">
@@ -176,5 +205,5 @@
     });
 </script>
 </body>
-        </html>
-                                                                      
+    </html>
+    
