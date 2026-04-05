@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة الواجبات المدرسية</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #1a5298; --bg: #f0f2f5; }
+        body { font-family: 'Cairo', sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        .header { background: linear-gradient(180deg, #2a75bb, #1a5298); color: white; text-align: center; padding: 25px 10px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 500px; margin: -20px auto 20px; padding: 0 15px; }
+        .admin-card { background: white; border-radius: 20px; padding: 20px; display: none; border: 2px solid var(--primary); margin-bottom: 20px; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-family: 'Cairo'; }
+        .btn-post { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; }
+        .hw-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); position: relative; }
+        .badge { position: absolute; left: 15px; top: 15px; background: #e74c3c; color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; background: #f8f9fa; padding: 10px; border-radius: 12px; }
+        .info-item { font-size: 13px; color: #555; }
+        .info-item b { color: #222; display: block; }
+        .hw-img { width: 100%; border-radius: 12px; margin-top: 10px; border: 1px solid #eee; }
+        #status { color: var(--primary); text-align: center; display: none; font-weight: bold; padding: 10px; border: 1px dashed; border-radius: 10px; margin: 10px 0; }
+        .settings-btn { position: fixed; bottom: 20px; left: 20px; background: #fff; border: 1px solid #ddd; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1 id="schoolTitle">منصة الواجبات</h1>
+    <p id="locationTitle">جاري تحميل البيانات...</p>
+</div>
+
+<div class="container">
+    <div id="adminPanel" class="admin-card">
+        <h3 style="text-align:center; color: var(--primary);">إضافة واجب جديد</h3>
+        <input type="text" id="inSchool" placeholder="اسم المدرسة (مثال: العلوم)">
+        <div style="display:flex; gap:10px;">
+            <select id="inType">
+                <option value="بنين">بنين</option>
+                <option value="بنات">بنات</option>
+                <option value="مختلطة">مختلطة</option>
+            </select>
+            <input type="text" id="inLoc" placeholder="المحافظة (مثال: البصرة)">
+        </div>
+
+        <input type="text" id="inDistrict" placeholder="القضاء أو الناحية (مثال: الزبير)">
+
+        <input type="text" id="inTeacher" placeholder="اسم المدرس">
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="inSubj" placeholder="المادة">
+            <input type="number" id="inPage" placeholder="رقم الصفحة">
+        </div>
+        <div style="display:flex; gap:10px;">
+            <select id="inGrade">
+                <option>الأول</option><option>الثاني</option><option>الثالث</option>
+                <option>الرابع</option><option>الخامس</option><option>السادس</option>
+            </select>
+            <input type="text" id="inSection" placeholder="الشعبة">
+        </div>
+        <textarea id="inNotes" placeholder="اكتب الواجب هنا..."></textarea>
+        <div style="background: #fdfdfd; padding: 10px; border: 1px dashed #ccc; border-radius: 10px; margin-bottom: 10px;">
+            <input type="file" id="inImg" accept="image/*">
+        </div>
+        <button class="btn-post" onclick="uploadData()">🚀 نشر الواجب الآن</button>
+        <p id="status">⏳ جاري الرفع.. انتظر ثواني</p>
+    </div>
+    <div id="tasksContainer"></div>
+</div>
+
+<button class="settings-btn" onclick="openAdmin()">⚙️</button>
+
+<script>
+    // إعدادات Firebase الخاصة بك (سيرفر أوروبا)
+    const firebaseConfig = {
+        apiKey: "AIzaSyC7uiBBwE7DMrC5rWeNkNSnbfS-lJ99kpU",
+        authDomain: "myschoolapp-fc61c.firebaseapp.com",
+        databaseURL: "https://myschoolapp-fc61c-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "myschoolapp-fc61c",
+        storageBucket: "myschoolapp-fc61c.firebasestorage.app",
+        appId: "1:187032779714:web:9e7d0f3660c24b1c71b45b"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function openAdmin() {
+        if(prompt("الرمز السري:") === "1234") {
+            document.getElementById('adminPanel').style.display = 'block';
+            window.scrollTo(0,0);
+        }
+    }
+
+    async function uploadData() {
+        const file = document.getElementById('inImg').files[0];
+        const status = document.getElementById('status');
+        status.style.display = 'block';
+        let imageUrl = "";
+
+        if(file) {
+            const formData = new FormData();
+            formData.append("image", file);
+            try {
+                // استخدمت لك مفتاح جديد ونظام رفع مباشر (v1/upload)
+                const res = await fetch("https://api.imgbb.com/1/upload?key=6079979d0389335a9633e7f4339179d6", {
+                    method: "POST",
+                    body: formData
+                });
+                const json = await res.json();
+                if(json.success) imageUrl = json.data.url;
+            } catch(e) { alert("فشل الرفع، سيتم النشر بدون صورة."); }
+        }
+
+        const taskData = {
+            school: document.getElementById('inSchool').value,
+            type: document.getElementById('inType').value,
+            loc: document.getElementById('inLoc').value,
+            district: document.getElementById('inDistrict').value, // حفظ القضاء
+            teacher: document.getElementById('inTeacher').value,
+            subj: document.getElementById('inSubj').value,
+            page: document.getElementById('inPage').value,
+            grade: document.getElementById('inGrade').value,
+            section: document.getElementById('inSection').value,
+            notes: document.getElementById('inNotes').value,
+            img: imageUrl,
+            time: new Date().toLocaleString('ar-EG'),
+            ts: Date.now()
+        };
+
+        await db.ref('homework').push(taskData);
+        alert("✅ تم النشر!");
+        location.reload();
+    }
+
+    db.ref('homework').orderByChild('ts').on('value', snap => {
+        const container = document.getElementById('tasksContainer');
+        container.innerHTML = "";
+        snap.forEach(child => {
+            const v = child.val();
+            document.getElementById('schoolTitle').innerText = "مدرسة " + v.school + " ال" + v.type;
+            document.getElementById('locationTitle').innerText = v.loc + " - " + (v.district || "");
+            container.insertAdjacentHTML('afterbegin', `
+                <div class="hw-card">
+                    <div class="badge">ص ${v.page}</div>
+                    <h2 style="color:var(--primary);">📚 ${v.subj}</h2>
+                    <div class="info-grid">
+                        <div class="info-item">المدرس: <b>${v.teacher}</b></div>
+                        <div class="info-item">الصف: <b>${v.grade}</b></div>
+                        <div class="info-item">الشعبة: <b>${v.section}</b></div>
+                        <div class="info-item">الوقت: <b>${v.time}</b></div>
+                    </div>
+                    <p><b>📝 الواجب:</b><br>${v.notes}</p>
+                    ${v.img ? `<img src="${v.img}" class="hw-img">` : ""}
+                </div>
+            `);
+        });
+    });
+</script>
+</body>
+</html>
