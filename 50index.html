@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة الواجبات المدرسية</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #1a5298; --bg: #f0f2f5; --whatsapp: #25D366; --telegram: #0088cc; }
+        body { font-family: 'Cairo', sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        .header { background: linear-gradient(180deg, #2a75bb, #1a5298); color: white; text-align: center; padding: 35px 10px; border-radius: 0 0 40px 40px; margin-bottom: 25px; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .container { max-width: 500px; margin: 0 auto 20px; padding: 0 15px; }
+        .admin-card { background: white; border-radius: 20px; padding: 20px; display: none; border: 2px solid var(--primary); margin-bottom: 20px; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-family: 'Cairo'; }
+        .btn-post { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; }
+        
+        .hw-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); position: relative; border: 1px solid #eee; }
+        .post-time { font-size: 11px; color: #888; background: #f8f9fa; padding: 4px 10px; border-radius: 8px; margin-bottom: 12px; display: inline-block; }
+        .card-header { border-bottom: 2px solid #f8f9fa; padding-bottom: 12px; margin-bottom: 15px; }
+        .school-info { color: var(--primary); font-weight: 900; font-size: 18px; display: block; }
+        .badge-page { position: absolute; left: 15px; top: 15px; background: #e74c3c; color: white; padding: 6px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; }
+        .hw-img { width: 100%; border-radius: 15px; margin-top: 15px; border: 1px solid #eee; }
+        
+        /* تنسيق أزرار المشاركة */
+        .share-bar { display: flex; gap: 10px; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; }
+        .share-btn { flex: 1; border: none; padding: 10px; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Cairo'; text-decoration: none; font-size: 13px; }
+        .btn-wa { background-color: var(--whatsapp); }
+        .btn-tg { background-color: var(--telegram); }
+
+        .admin-btns { display: none; gap: 10px; margin-top: 15px; }
+        .settings-btn { position: fixed; bottom: 25px; left: 25px; background: #fff; width: 55px; height: 55px; border-radius: 50%; cursor: pointer; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 1px solid #ddd; font-size: 24px; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1 id="mainTitle">منصة الواجبات المدرسية</h1>
+    <p id="mainSub">نظام متابعة الدروس الذكي</p>
+</div>
+
+<div class="container">
+    <div id="adminPanel" class="admin-card">
+        <h3 style="text-align:center;">إضافة واجب جديد</h3>
+        <input type="hidden" id="editKey">
+        <input type="text" id="inSchool" placeholder="اسم المدرسة">
+        <input type="text" id="inLoc" placeholder="المكان/المحافظة">
+        <div style="display:flex; gap:10px;">
+            <select id="inType"><option value="بنين">بنين</option><option value="بنات">بنات</option></select>
+            <input type="text" id="inSection" placeholder="الشعبة">
+        </div>
+        <input type="text" id="inTeacher" placeholder="اسم المدرس">
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="inSubj" placeholder="المادة">
+            <input type="number" id="inPage" placeholder="الصفحة">
+        </div>
+        <textarea id="inNotes" style="height:100px;" placeholder="تفاصيل الواجب..."></textarea>
+        <input type="file" id="inImg" accept="image/*">
+        <button class="btn-post" onclick="processUpload()">🚀 نشر الآن</button>
+    </div>
+    <div id="tasksContainer"></div>
+</div>
+
+<button class="settings-btn" onclick="openAdmin()">⚙️</button>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyC7uiBBwE7DMrC5rWeNkNSnbfS-lJ99kpU",
+        authDomain: "myschoolapp-fc61c.firebaseapp.com",
+        databaseURL: "https://myschoolapp-fc61c-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "myschoolapp-fc61c",
+        storageBucket: "myschoolapp-fc61c.firebasestorage.app",
+        appId: "1:187032779714:web:9e7d0f3660c24b1c71b45b"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let isLogged = false;
+
+    function openAdmin() { if(prompt("الرمز:") === "2025") { isLogged = true; document.getElementById('adminPanel').style.display='block'; } }
+
+    async function processUpload() {
+        const file = document.getElementById('inImg').files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => save(reader.result);
+        } else { save(""); }
+    }
+
+    async function save(img) {
+        const data = {
+            school: document.getElementById('inSchool').value,
+            loc: document.getElementById('inLoc').value,
+            type: document.getElementById('inType').value,
+            section: document.getElementById('inSection').value,
+            teacher: document.getElementById('inTeacher').value,
+            subj: document.getElementById('inSubj').value,
+            page: document.getElementById('inPage').value,
+            notes: document.getElementById('inNotes').value,
+            img: img || "",
+            fullDate: new Date().toLocaleString('ar-EG'),
+            ts: Date.now()
+        };
+        await db.ref('homework').push(data);
+        location.reload();
+    }
+
+    // دالة المشاركة الذكية
+    function sharePost(type, school, subj, page, section) {
+        const text = `📌 واجب جديد من مدرسة ${school}\n📚 المادة: ${subj}\n📖 الصفحة: ${page}\n👥 الشعبة: ${section}\n🔗 للمتابعة: ${window.location.href}`;
+        const url = type === 'wa' 
+            ? `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`
+            : `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+    }
+
+    db.ref('homework').orderByChild('ts').on('value', snap => {
+        const container = document.getElementById('tasksContainer');
+        container.innerHTML = "";
+        snap.forEach(child => {
+            const v = child.val();
+            document.getElementById('mainTitle').innerText = "منصة " + v.school;
+            container.insertAdjacentHTML('afterbegin', `
+                <div class="hw-card">
+                    <div class="badge-page">ص ${v.page}</div>
+                    <div class="post-time">🕒 ${v.fullDate}</div>
+                    <div class="card-header">
+                        <span class="school-info">🏫 مدرسة ${v.school}</span>
+                        <span style="font-size:12px; color:#666;">📍 ${v.loc} | شعبة ${v.section} (${v.type})</span>
+                    </div>
+                    <h2 style="color:var(--primary); font-size:18px;">📚 مادة ${v.subj}</h2>
+                    <p>المدرس: <b>${v.teacher}</b></p>
+                    <p>${v.notes}</p>
+                    ${v.img ? `<img src="${v.img}" class="hw-img">` : ""}
+                    
+                    <div class="share-bar">
+                        <a href="javascript:void(0)" onclick="sharePost('wa', '${v.school}', '${v.subj}', '${v.page}', '${v.section}')" class="share-btn btn-wa">
+                            <i class="fab fa-whatsapp"></i> واتساب
+                        </a>
+                        <a href="javascript:void(0)" onclick="sharePost('tg', '${v.school}', '${v.subj}', '${v.page}', '${v.section}')" class="share-btn btn-tg">
+                            <i class="fab fa-telegram"></i> تليجرام
+                        </a>
+                    </div>
+
+                    <div class="admin-btns" style="display: ${isLogged ? 'flex' : 'none'}">
+                        <button style="flex:1;" onclick="db.ref('homework/${child.key}').remove().then(()=>location.reload())">حذف</button>
+                    </div>
+                </div>
+            `);
+        });
+    });
+</script>
+</body>
+</html>
