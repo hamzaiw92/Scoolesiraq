@@ -25,14 +25,18 @@
         .hw-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); position: relative; border: 1px solid #eee; }
         .badge-page { position: absolute; left: 15px; top: 15px; background: #e74c3c; color: white; padding: 6px 14px; border-radius: 10px; font-size: 14px; font-weight: bold; z-index: 5; }
         
-        /* تنسيق الوقت والتاريخ */
         .post-date { font-size: 11px; color: #777; background: #f0f2f5; padding: 3px 10px; border-radius: 5px; display: inline-block; margin-bottom: 10px; }
 
         .card-header { border-bottom: 2px solid #f8f9fa; padding-bottom: 12px; margin-bottom: 15px; }
-        .school-info { color: var(--primary); font-weight: 900; font-size: 18px; display: block; }
-        .teacher-info { background: #f0f4f8; color: #333; padding: 5px 12px; border-radius: 8px; font-size: 14px; display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; border: 1px dashed #1a5298; }
+        .school-info { color: var(--primary); font-weight: 900; font-size: 18px; display: block; margin-bottom: 4px; }
         
-        .notes-text { font-size: 15px; line-height: 1.6; color: #444; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; margin-bottom: 5px; }
+        /* تنسيق المحافظة والقضاء */
+        .location-info { font-size: 13px; color: #555; display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+        .location-info i { color: #e74c3c; }
+
+        .teacher-info { background: #f0f4f8; color: #333; padding: 5px 12px; border-radius: 8px; font-size: 14px; display: inline-flex; align-items: center; gap: 5px; border: 1px dashed #1a5298; }
+        
+        .notes-text { font-size: 15px; line-height: 1.6; color: #444; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; margin-bottom: 5px; margin-top: 10px; }
         .notes-text.expanded { -webkit-line-clamp: unset; display: block; }
         .read-more-btn { color: var(--primary); border: none; background: none; font-weight: bold; cursor: pointer; padding: 0 0 10px 0; font-family: 'Cairo'; }
 
@@ -41,7 +45,6 @@
         .share-bar { display: flex; gap: 8px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
         .share-btn { flex: 1; border: none; padding: 10px; border-radius: 10px; color: white; display: flex; align-items: center; justify-content: center; gap: 5px; text-decoration: none; font-size: 13px; font-weight: bold; cursor: pointer; }
         .btn-wa { background-color: var(--whatsapp); }
-        .btn-tg { background-color: var(--telegram); }
 
         .admin-controls { display: none; gap: 8px; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 15px; }
         .control-btn { flex: 1; border: none; padding: 10px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; }
@@ -54,26 +57,25 @@
 <body>
 
 <div class="header">
-    <h1 id="mainTitle">منصة الواجبات المدرسية</h1>
-    <p>نظام متابعة الدروس الذكي</p>
+    <h1>منصة الواجبات العراقية</h1>
+    <p>تابع دروسك حسب محافظتك وقضائك</p>
 </div>
 
 <div class="container">
     <div id="adminPanel" class="admin-card">
         <h3 id="panelTitle" style="text-align:center;">إضافة واجب جديد</h3>
         <input type="hidden" id="editKey">
-        <input type="text" id="inSchool" placeholder="اسم المدرسة">
-        <input type="text" id="inLoc" placeholder="المكان">
         <div style="display:flex; gap:10px;">
-            <select id="inType"><option value="بنين">بنين</option><option value="بنات">بنات</option></select>
-            <input type="text" id="inSection" placeholder="الشعبة">
+            <input type="text" id="inProvince" placeholder="المحافظة (مثال: البصرة)">
+            <input type="text" id="inDistrict" placeholder="القضاء (مثال: الزبير)">
         </div>
+        <input type="text" id="inSchool" placeholder="اسم المدرسة">
         <input type="text" id="inTeacher" placeholder="اسم المدرس">
         <div style="display:flex; gap:10px;">
             <input type="text" id="inSubj" placeholder="المادة">
             <input type="number" id="inPage" placeholder="الصفحة">
         </div>
-        <textarea id="inNotes" style="height:120px;" placeholder="تفاصيل الواجب..."></textarea>
+        <textarea id="inNotes" style="height:120px;" placeholder="اكتب تفاصيل الواجب هنا..."></textarea>
         
         <div class="camera-section">
             <label class="cam-btn">
@@ -132,10 +134,9 @@
         const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
         const data = {
+            province: document.getElementById('inProvince').value,
+            district: document.getElementById('inDistrict').value,
             school: document.getElementById('inSchool').value,
-            loc: document.getElementById('inLoc').value,
-            type: document.getElementById('inType').value,
-            section: document.getElementById('inSection').value,
             teacher: document.getElementById('inTeacher').value,
             subj: document.getElementById('inSubj').value,
             page: document.getElementById('inPage').value,
@@ -152,15 +153,16 @@
 
     function edit(key, d) {
         document.getElementById('editKey').value = key;
+        document.getElementById('inProvince').value = d.province || "";
+        document.getElementById('inDistrict').value = d.district || "";
         document.getElementById('inSchool').value = d.school;
-        document.getElementById('inLoc').value = d.loc;
         document.getElementById('inTeacher').value = d.teacher;
         document.getElementById('inSubj').value = d.subj;
         document.getElementById('inPage').value = d.page;
         document.getElementById('inNotes').value = d.notes;
         selectedImg = d.img || "";
         document.getElementById('panelTitle').innerText = "📝 تعديل الواجب";
-        document.getElementById('mainBtn').innerText = "تحديث الآن";
+        document.getElementById('mainBtn').innerText = "تحديث";
         document.getElementById('cancelBtn').style.display = 'block';
         window.scrollTo(0,0);
     }
@@ -180,19 +182,21 @@
             container.insertAdjacentHTML('afterbegin', `
                 <div class="hw-card">
                     <div class="badge-page">ص ${v.page}</div>
-                    <div class="post-date"><i class="far fa-calendar-alt"></i> ${v.date || ''} | <i class="far fa-clock"></i> ${v.time || ''}</div>
+                    <div class="post-date">🕒 ${v.date} | ${v.time}</div>
                     <div class="card-header">
                         <span class="school-info">🏫 مدرسة ${v.school}</span>
+                        <div class="location-info">
+                            <i class="fas fa-map-marker-alt"></i> ${v.province || 'غير محدد'} - ${v.district || 'قضاء عام'}
+                        </div>
                         <div class="teacher-info"><i class="fas fa-user-tie"></i> المدرس: <b>${v.teacher}</b></div>
                     </div>
-                    <h2 style="color:var(--primary); font-size:18px;">📚 واجب ${v.subj}</h2>
+                    <h2 style="color:var(--primary); font-size:18px;">📚 مادة ${v.subj}</h2>
                     <p class="notes-text">${v.notes.replace(/\n/g, '<br>')}</p>
                     ${hasMore ? `<button class="read-more-btn" onclick="toggleText(this)">اقرأ المزيد...</button>` : ''}
                     ${v.img ? `<img src="${v.img}" class="hw-img">` : ""}
                     
                     <div class="share-bar">
-                        <button onclick="window.open('https://wa.me/?text='+encodeURIComponent('واجب ${v.subj}\\nمدرسة ${v.school}\\nص: ${v.page}\\nنُشر في: ${v.date}'), '_blank')" class="share-btn btn-wa"><i class="fab fa-whatsapp"></i> واتساب</button>
-                        <button onclick="window.open('https://t.me/share/url?url='+encodeURIComponent(window.location.href)+'&text='+encodeURIComponent('واجب ${v.subj}'), '_blank')" class="share-btn btn-tg"><i class="fab fa-telegram"></i> تليجرام</button>
+                        <button onclick="window.open('https://wa.me/?text='+encodeURIComponent('واجب ${v.subj}\\nمدرسة ${v.school}\\nالموقع: ${v.province}-${v.district}'), '_blank')" class="share-btn btn-wa"><i class="fab fa-whatsapp"></i> واتساب</button>
                     </div>
 
                     <div class="admin-controls" style="display: ${isLogged ? 'flex' : 'none'}">
@@ -205,5 +209,4 @@
     });
 </script>
 </body>
-    </html>
-    
+</html>
